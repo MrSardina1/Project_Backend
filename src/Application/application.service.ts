@@ -2,36 +2,130 @@ import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Application, ApplicationDocument, ApplicationStatus } from './application.schema';
+import { Internship, InternshipDocument } from 'src/Internship/internship.schema';
+import { Company, CompanyDocument } from 'src/company/company.schema';
+import { Role } from 'src/Auth/roles.enum';
 
 @Injectable()
 export class ApplicationService {
   constructor(
     @InjectModel(Application.name)
     private applicationModel: Model<ApplicationDocument>,
+    @InjectModel(Internship.name)
+    private internshipModel: Model<InternshipDocument>,
+    @InjectModel(Company.name)
+    private companyModel: Model<CompanyDocument>,
   ) {}
 
   async apply(studentId: string, internshipId: string) {
+    // Check if internship exists
+    const internship = await this.internshipModel.findById(internshipId);
+    if (!internship) {
+      throw new NotFoundException('Internship not found');
+    }
+
+    // Check if student already applied
+    const existingApplication = await this.applicationModel.findOne({
+      student: studentId,
+      internship: internshipId,
+    });
+
+    if (existingApplication) {
+      throw new ForbiddenException('You have already applied for this internship');
+    }
+
     return this.applicationModel.create({
       student: studentId,
       internship: internshipId,
     });
   }
 
-  async findAll() {
-    return this.applicationModel
-      .find()
-      .populate('student')
-      .populate('internship');
+  async findAll(userId: string, userRole: Role) {
+    if (userRole === Role.ADMIN) {
+      // Admin sees ALL applications
+      return this.applicationModel
+        .find()
+        .populate('student', 'username email')
+        .populate({
+          path: 'internship',
+          populate: {
+            path: 'company',
+            select: 'name email website'
+          }
+        });
+    }
+
+    if (userRole === Role.COMPANY) {
+      // userId is the User ID, we need to find the Company ID
+      const company = await this.companyModel.findOne({ user: userId });
+      
+      if (!company) {
+        throw new NotFoundException('Company profile not found');
+      }
+
+      // First, find all internships belonging to this company
+      const companyInternships = await this.internshipModel.find({ 
+        company: company._id 
+      }).select('_id');
+
+      const internshipIds = companyInternships.map(i => i._id);
+
+      // Find applications for those internships
+      return this.applicationModel
+        .find({ internship: { $in: internshipIds } })
+        .populate('student', 'username email')
+        .populate({
+          path: 'internship',
+          populate: {
+            path: 'company',
+            select: 'name email website'
+          }
+        });
+    }
+
+    throw new ForbiddenException('Unauthorized to view applications');
   }
 
   async updateStatus(
     applicationId: string,
     status: ApplicationStatus,
+    userId: string,
+    userRole: Role,
   ) {
-    const application = await this.applicationModel.findById(applicationId);
-    if (!application) throw new NotFoundException('Application not found');
+    const application = await this.applicationModel
+      .findById(applicationId)
+      .populate('internship');
 
-    application.status = status;
-    return application.save();
+    if (!application) {
+      throw new NotFoundException('Application not found');
+    }
+
+    // Admin can update any application
+    if (userRole === Role.ADMIN) {
+      application.status = status;
+      return application.save();
+    }
+
+    // Company can only update applications for their own internships
+    if (userRole === Role.COMPANY) {
+      // userId is the User ID, we need to find the Company ID
+      const company = await this.companyModel.findOne({ user: userId });
+      
+      if (!company) {
+        throw new NotFoundException('Company profile not found');
+      }
+
+      const internship = application.internship as any;
+      
+      // Check if this internship belongs to this company
+      if (internship.company.toString() !== company._id.toString()) {
+        throw new ForbiddenException('You can only update applications for your own internships');
+      }
+
+      application.status = status;
+      return application.save();
+    }
+
+    throw new ForbiddenException('Unauthorized to update application status');
   }
 }

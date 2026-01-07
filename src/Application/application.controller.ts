@@ -25,20 +25,28 @@ export class ApplicationController {
     );
   }
 
-  // ADMIN sees all
+  // ADMIN and COMPANY can see applications
   @Get()
-  @Roles(Role.ADMIN)
-  findAll() {
-    return this.applicationService.findAll();
+  @Roles(Role.ADMIN, Role.COMPANY)
+  findAll(@Req() req) {
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+    
+    // Admin sees all, Company sees only their internship applications
+    return this.applicationService.findAll(userId, userRole);
   }
 
-  // COMPANY accepts / rejects
+  // ADMIN and COMPANY can update status
   @Patch(':id/status')
-  @Roles(Role.COMPANY)
+  @Roles(Role.ADMIN, Role.COMPANY)
   updateStatus(
+    @Req() req,
     @Param('id') id: string,
     @Body() dto: UpdateApplicationStatusDto,
   ) {
-    return this.applicationService.updateStatus(id, dto.status);
+    const userId = req.user.userId;
+    const userRole = req.user.role;
+    
+    return this.applicationService.updateStatus(id, dto.status, userId, userRole);
   }
 }

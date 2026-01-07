@@ -19,6 +19,7 @@ import { ApplicationModule } from './Application/application.module';
     CompanyModule,
     InternshipModule,
     ApplicationModule,
+    CompanyModule
   ],
   controllers: [AppController],
   providers: [AppService],
