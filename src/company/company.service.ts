@@ -1,4 +1,4 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Company, CompanyDocument } from 'src/company/company.schema';
@@ -57,6 +57,45 @@ export class CompanyService {
         email: user.email,
         role: user.role,
       },
+      company: {
+        id: company._id,
+        name: company.name,
+        email: company.email,
+      },
+    };
+  }
+
+  // Helper method to link an existing user to a company
+  async linkUserToCompany(userId: string, companyData: any) {
+    // Verify user exists
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Check if user already has a company
+    const existingCompany = await this.companyModel.findOne({ user: userId });
+    if (existingCompany) {
+      throw new ConflictException('This user is already linked to a company');
+    }
+
+    // Check if company email already exists
+    const emailExists = await this.companyModel.findOne({ email: companyData.email });
+    if (emailExists) {
+      throw new ConflictException('Company with this email already exists');
+    }
+
+    // Create company linked to user
+    const company = await this.companyModel.create({
+      name: companyData.name,
+      description: companyData.description,
+      email: companyData.email,
+      website: companyData.website,
+      user: userId,
+    });
+
+    return {
+      message: 'Company linked to user successfully',
       company: {
         id: company._id,
         name: company.name,

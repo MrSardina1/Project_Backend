@@ -56,22 +56,35 @@ export class ApplicationService {
     }
 
     if (userRole === Role.COMPANY) {
-      // userId is the User ID, we need to find the Company ID
-      const company = await this.companyModel.findOne({ user: userId });
+      // Convert userId string to ObjectId for proper Mongoose comparison
+      const userObjectId = new Types.ObjectId(userId);
+      
+      console.log('=== COMPANY VIEW DEBUG ===');
+      console.log('User ID (string):', userId);
+      console.log('User ID (ObjectId):', userObjectId);
+      
+      const company = await this.companyModel.findOne({ user: userObjectId });
+      
+      console.log('Found company:', company?._id, company?.name);
       
       if (!company) {
-        throw new NotFoundException('Company profile not found');
+        throw new NotFoundException(
+          `Company profile not found for user ${userId}. Make sure your user is properly linked to a company.`
+        );
       }
 
       // First, find all internships belonging to this company
       const companyInternships = await this.internshipModel.find({ 
         company: company._id 
-      }).select('_id');
+      }).select('_id title');
+
+      console.log('Company internships found:', companyInternships.length);
+      console.log('Internship IDs:', companyInternships.map(i => i._id));
 
       const internshipIds = companyInternships.map(i => i._id);
 
       // Find applications for those internships
-      return this.applicationModel
+      const applications = await this.applicationModel
         .find({ internship: { $in: internshipIds } })
         .populate('student', 'username email')
         .populate({
@@ -81,6 +94,11 @@ export class ApplicationService {
             select: 'name email website'
           }
         });
+
+      console.log('Applications found:', applications.length);
+      console.log('=== END DEBUG ===');
+
+      return applications;
     }
 
     throw new ForbiddenException('Unauthorized to view applications');
@@ -108,8 +126,10 @@ export class ApplicationService {
 
     // Company can only update applications for their own internships
     if (userRole === Role.COMPANY) {
-      // userId is the User ID, we need to find the Company ID
-      const company = await this.companyModel.findOne({ user: userId });
+      // Convert userId string to ObjectId for proper Mongoose comparison
+      const userObjectId = new Types.ObjectId(userId);
+      
+      const company = await this.companyModel.findOne({ user: userObjectId });
       
       if (!company) {
         throw new NotFoundException('Company profile not found');
