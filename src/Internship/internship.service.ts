@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Internship, InternshipDocument } from 'src/Internship/internship.schema';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateInternshipDto } from './dto/create-internship.dto';
 
 @Injectable()
@@ -12,9 +12,10 @@ export class InternshipService {
   ) {}
 
   create(data: CreateInternshipDto, companyId: string) {
+    // Ensure companyId is stored as ObjectId, not string
     return this.internshipModel.create({
       ...data,
-      company: companyId,
+      company: new Types.ObjectId(companyId),
     });
   }
 

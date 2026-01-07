@@ -15,7 +15,7 @@ import { Company, CompanyDocument } from 'src/company/company.schema';
 export class InternshipController {
   constructor(
     private internshipService: InternshipService,
-    @InjectModel('Company') private companyModel: Model<CompanyDocument>,
+    @InjectModel(Company.name) private companyModel: Model<CompanyDocument>,
   ) {}
 
   @Post()
@@ -33,6 +33,12 @@ export class InternshipController {
     if (!company) {
       throw new NotFoundException('Company profile not found for this user');
     }
+
+    console.log('=== CREATING INTERNSHIP ===');
+    console.log('User ID:', userId);
+    console.log('Company ID:', company._id.toString());
+    console.log('Company Name:', company.name);
+    console.log('========================');
 
     // Pass the company ID, not the user ID
     return this.internshipService.create(
