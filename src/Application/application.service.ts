@@ -18,6 +18,11 @@ export class ApplicationService {
   ) {}
 
   async apply(studentId: string, internshipId: string) {
+    // Validate ObjectId format
+    if (!Types.ObjectId.isValid(internshipId)) {
+      throw new NotFoundException(`Invalid internship ID format: ${internshipId}`);
+    }
+
     const internship = await this.internshipModel.findById(internshipId);
     if (!internship) {
       throw new NotFoundException('Internship not found');
@@ -169,6 +174,11 @@ export class ApplicationService {
     userId: string,
     userRole: Role,
   ) {
+    // Validate ObjectId format first
+    if (!Types.ObjectId.isValid(applicationId)) {
+      throw new NotFoundException(`Invalid application ID format: ${applicationId}`);
+    }
+
     // First, find the application and populate the internship
     const application = await this.applicationModel
       .findById(applicationId)

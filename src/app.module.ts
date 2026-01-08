@@ -4,11 +4,11 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './Database/database.module';
 import { UserModule } from './user/user.module';
 import { AuthModule } from './Auth/auth.module';
-import { MongooseModule } from '@nestjs/mongoose';
 import { AIChatModule } from './AIChat/aichat.module';
 import { CompanyModule } from './company/company.module';
 import { InternshipModule } from './Internship/internship.module';
 import { ApplicationModule } from './Application/application.module';
+import { ReviewModule } from './Review/review.module';
 
 @Module({
   imports: [
@@ -19,7 +19,7 @@ import { ApplicationModule } from './Application/application.module';
     CompanyModule,
     InternshipModule,
     ApplicationModule,
-    CompanyModule
+    ReviewModule,
   ],
   controllers: [AppController],
   providers: [AppService],
