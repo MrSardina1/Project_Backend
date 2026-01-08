@@ -6,6 +6,7 @@ import { Roles } from 'src/Auth/roles.decorator';
 import { Role } from 'src/Auth/roles.enum';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { Public } from 'src/Auth/public.decorator';
 
 @Controller('reviews')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,6 +27,7 @@ export class ReviewController {
 
   // Public - Get reviews for a specific company
   @Get('company/:companyId')
+  @Public()
   async getCompanyReviews(@Param('companyId') companyId: string) {
     return this.reviewService.findByCompany(companyId);
   }
