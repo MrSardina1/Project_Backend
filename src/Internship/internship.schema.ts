@@ -18,8 +18,11 @@ export class Internship {
   @Prop({ required: true })
   duration: string;
 
-  @Prop({ type: Types.ObjectId, ref: Company.name})
+  @Prop({ type: Types.ObjectId, ref: Company.name })
   company: Types.ObjectId;
+
+  // Virtual field for application count
+  applicationCount?: number;
 }
 
 export const InternshipSchema = SchemaFactory.createForClass(Internship);

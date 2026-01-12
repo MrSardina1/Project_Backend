@@ -5,6 +5,17 @@ import { Application, ApplicationDocument } from 'src/Application/application.sc
 import { Model, Types } from 'mongoose';
 import { CreateInternshipDto } from './dto/create-internship.dto';
 
+export interface InternshipWithCount {
+  _id: string;
+  title: string;
+  description: string;
+  location: string;
+  duration: string;
+  company: any;
+  createdAt: string;
+  applicationCount: number;
+}
+
 @Injectable()
 export class InternshipService {
   constructor(
@@ -21,13 +32,12 @@ export class InternshipService {
     });
   }
 
-  async findAll() {
+  async findAll(): Promise<InternshipWithCount[]> {
     const internships = await this.internshipModel
       .find()
       .populate('company', 'name website profilePicture')
       .lean();
 
-    // Get application counts for each internship
     const internshipsWithCounts = await Promise.all(
       internships.map(async (internship: any) => {
         const applicationCount = await this.applicationModel.countDocuments({
@@ -35,20 +45,20 @@ export class InternshipService {
         });
         return {
           ...internship,
+          _id: internship._id.toString(),
           applicationCount
-        };
+        } as InternshipWithCount;
       })
     );
 
     return internshipsWithCounts;
   }
 
-  async findByCompany(companyId: string) {
+  async findByCompany(companyId: string): Promise<InternshipWithCount[]> {
     const internships = await this.internshipModel
       .find({ company: new Types.ObjectId(companyId) })
       .lean();
 
-    // Get application counts for each internship
     const internshipsWithCounts = await Promise.all(
       internships.map(async (internship: any) => {
         const applicationCount = await this.applicationModel.countDocuments({
@@ -56,8 +66,9 @@ export class InternshipService {
         });
         return {
           ...internship,
+          _id: internship._id.toString(),
           applicationCount
-        };
+        } as InternshipWithCount;
       })
     );
 

@@ -20,11 +20,11 @@ export class User extends Document {
     })
     role: Role;
 
-    @Prop()
-    profilePicture: string;
+    @Prop({ required: false })  // Make optional
+    profilePicture?: string;
 
-    @Prop()
-    bio: string;
+    @Prop({ required: false })  // Make optional
+    bio?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

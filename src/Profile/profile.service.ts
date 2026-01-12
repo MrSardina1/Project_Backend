@@ -60,63 +60,6 @@ export class ProfileService {
     return company;
   }
 
-  async updateProfile(userId: string, userRole: string, data: any) {
-    // Prevent updating sensitive fields
-    const { email, password, role, ...allowedData } = data;
-
-    if (userRole === 'COMPANY') {
-      const company = await this.companyModel
-        .findOneAndUpdate(
-          { user: new Types.ObjectId(userId) },
-          { $set: allowedData },
-          { new: true }
-        );
-      
-      if (!company) {
-        throw new NotFoundException('Company profile not found');
-      }
-      return company;
-    }
-
-    const user = await this.userModel.findByIdAndUpdate(
-      userId,
-      { $set: allowedData },
-      { new: true }
-    ).select('-password');
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user;
-  }
-
-  async changePassword(userId: string, oldPassword: string, newPassword: string) {
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-
-    // Verify old password
-    const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      throw new UnauthorizedException('Old password is incorrect');
-    }
-
-    // Validate new password
-    if (newPassword.length < 6) {
-      throw new BadRequestException('New password must be at least 6 characters');
-    }
-
-    // Hash new password
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-    user.password = hashedPassword;
-    await user.save();
-
-    return { message: 'Password changed successfully' };
-  }
-
   async updateProfilePicture(userId: string, userRole: string, filename: string) {
     const picturePath = `uploads/profiles/${filename}`;
 
@@ -124,7 +67,7 @@ export class ProfileService {
       const company = await this.companyModel
         .findOneAndUpdate(
           { user: new Types.ObjectId(userId) },
-          { profilePicture: picturePath },
+          { profilePicture: picturePath },  // Changed from undefined to string
           { new: true }
         );
       
@@ -164,8 +107,11 @@ export class ProfileService {
         }
       }
 
-      company.profilePicture = undefined;
-      await company.save();
+      // Use $unset instead of setting to undefined
+      await this.companyModel.findByIdAndUpdate(
+        company._id,
+        { $unset: { profilePicture: "" } }
+      );
 
       return { message: 'Profile picture removed successfully' };
     }
@@ -183,9 +129,59 @@ export class ProfileService {
       }
     }
 
-    user.profilePicture = undefined;
-    await user.save();
+    // Use $unset instead of setting to undefined
+    await this.userModel.findByIdAndUpdate(
+      userId,
+      { $unset: { profilePicture: "" } }
+    );
 
     return { message: 'Profile picture removed successfully' };
+  }
+
+  async changePassword(userId: string, oldPassword: string, newPassword: string) {
+    // Find user based on role
+    let user;
+    let isCompany = false;
+    
+    // First try to find as regular user
+    user = await this.userModel.findById(userId);
+    
+    if (!user) {
+      // If not found as user, try to find company's user
+      const company = await this.companyModel
+        .findOne({ user: new Types.ObjectId(userId) })
+        .populate('user');
+      
+      if (company && company.user) {
+        user = company.user;
+        isCompany = true;
+      }
+    }
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify old password
+    const isPasswordValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Old password is incorrect');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password based on user type
+    if (isCompany) {
+      await this.userModel.findByIdAndUpdate(user._id, {
+        password: hashedPassword
+      });
+    } else {
+      await this.userModel.findByIdAndUpdate(userId, {
+        password: hashedPassword
+      });
+    }
+
+    return { message: 'Password updated successfully' };
   }
 }

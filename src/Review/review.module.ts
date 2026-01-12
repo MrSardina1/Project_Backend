@@ -5,6 +5,7 @@ import { ReviewController } from './review.controller';
 import { Review, ReviewSchema } from './review.schema';
 import { Company, CompanySchema } from 'src/company/company.schema';
 import { Application, ApplicationSchema } from 'src/Application/application.schema';
+import { Internship, InternshipSchema } from 'src/Internship/internship.schema';
 import { AuthModule } from 'src/Auth/auth.module';
 
 @Module({
@@ -14,6 +15,7 @@ import { AuthModule } from 'src/Auth/auth.module';
       { name: Review.name, schema: ReviewSchema },
       { name: Company.name, schema: CompanySchema },
       { name: Application.name, schema: ApplicationSchema },
+      { name: Internship.name, schema: InternshipSchema },
     ]),
   ],
   controllers: [ReviewController],

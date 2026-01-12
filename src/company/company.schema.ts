@@ -33,8 +33,8 @@ export class Company {
   })
   status: CompanyStatus;
 
-  @Prop()
-  profilePicture: string;
+  @Prop({ required: false })  // Make optional
+  profilePicture?: string;
 }
 
 export const CompanySchema = SchemaFactory.createForClass(Company);
