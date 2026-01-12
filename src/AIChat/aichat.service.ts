@@ -6,7 +6,7 @@ import { Internship, InternshipDocument } from 'src/Internship/internship.schema
 
 @Injectable()
 export class AIChatService {
-  private readonly OPENROUTER_API_KEY = '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';
+  private readonly OPENROUTER_API_KEY = process.env.OPENAI_API_KEY;
   private readonly OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
   private readonly MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 
@@ -108,7 +108,9 @@ Be specific and actionable.
       });
 
       if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('OpenRouter API Error:', response.status, errorData);
+        throw new Error(`API error: ${response.status} - ${JSON.stringify(errorData)}`);
       }
 
       const data = await response.json();

@@ -42,7 +42,7 @@ export class ProfileController {
   // Update own profile
   @Patch('me')
   updateMyProfile(@Req() req, @Body() data: any) {
-    return this.profileService.updateProfilePicture(req.user.userId, req.user.role, data);
+    return this.profileService.updateProfile(req.user.userId, req.user.role, data);
   }
 
   // Change password

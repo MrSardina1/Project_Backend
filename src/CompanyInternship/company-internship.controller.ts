@@ -60,8 +60,11 @@ export class CompanyInternshipController {
     }
 
     // Verify ownership - convert both to strings for comparison
-    const internshipCompanyId = result.internship.company.toString();
+    const internshipCompanyId = result.internship.company._id
+    ? result.internship.company._id.toString()
+    : result.internship.company.toString();
     const userCompanyId = company._id.toString();
+
 
     if (internshipCompanyId !== userCompanyId) {
       throw new NotFoundException('This internship does not belong to your company');

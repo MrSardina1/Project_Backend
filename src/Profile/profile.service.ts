@@ -60,6 +60,35 @@ export class ProfileService {
     return company;
   }
 
+
+  async updateProfile(userId: string, userRole: string, data: any) {
+    if (userRole === 'COMPANY') {
+      const company = await this.companyModel
+        .findOneAndUpdate(
+          { user: new Types.ObjectId(userId) },
+          { $set: data },
+          { new: true }
+        )
+        .populate('user', '-password');
+      
+      if (!company) {
+        throw new NotFoundException('Company profile not found');
+      }
+      return company;
+    }
+
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      { $set: data },
+      { new: true }
+    ).select('-password');
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
   async updateProfilePicture(userId: string, userRole: string, filename: string) {
     const picturePath = `uploads/profiles/${filename}`;
 
@@ -67,7 +96,7 @@ export class ProfileService {
       const company = await this.companyModel
         .findOneAndUpdate(
           { user: new Types.ObjectId(userId) },
-          { profilePicture: picturePath },  // Changed from undefined to string
+          { profilePicture: picturePath },
           { new: true }
         );
       
