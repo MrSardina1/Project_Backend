@@ -24,10 +24,10 @@ export class ReviewService {
       throw new NotFoundException(`Invalid company ID format: ${companyId}`);
     }
 
-    // Validate rating as number between 1-5
+    // Convert and validate rating
     const numRating = Number(rating);
-    if (isNaN(numRating) || numRating < 1 || numRating > 5) {
-      throw new BadRequestException('Rating must be a number between 1 and 5');
+    if (isNaN(numRating) || numRating < 1 || numRating > 5 || !Number.isInteger(numRating)) {
+      throw new BadRequestException('Rating must be a whole number between 1 and 5');
     }
 
     const company = await this.companyModel.findById(companyId);
@@ -45,7 +45,7 @@ export class ReviewService {
       throw new BadRequestException('You have already reviewed this company');
     }
 
-    // FIX: Get all internships for this company
+    // Get all internships for this company
     const companyInternships = await this.internshipModel.find({
       company: new Types.ObjectId(companyId)
     }).select('_id');
@@ -69,7 +69,7 @@ export class ReviewService {
       user: new Types.ObjectId(userId),
       company: new Types.ObjectId(companyId),
       rating: numRating,
-      comment,
+      comment: comment || '',
     });
   }
 
@@ -116,10 +116,10 @@ export class ReviewService {
       throw new NotFoundException(`Invalid review ID format: ${reviewId}`);
     }
 
-    // Validate rating as number between 1-5
+    // Convert and validate rating
     const numRating = Number(rating);
-    if (isNaN(numRating) || numRating < 1 || numRating > 5) {
-      throw new BadRequestException('Rating must be a number between 1 and 5');
+    if (isNaN(numRating) || numRating < 1 || numRating > 5 || !Number.isInteger(numRating)) {
+      throw new BadRequestException('Rating must be a whole number between 1 and 5');
     }
 
     const review = await this.reviewModel.findById(reviewId);
@@ -133,9 +133,7 @@ export class ReviewService {
     }
 
     review.rating = numRating;
-    if (comment !== undefined) {
-      review.comment = comment;
-    }
+    review.comment = comment || '';
 
     return review.save();
   }

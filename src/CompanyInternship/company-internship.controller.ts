@@ -7,7 +7,6 @@ import { InternshipService } from 'src/Internship/internship.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Company, CompanyDocument } from 'src/company/company.schema';
-import { ApplicationService } from 'src/Application/application.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.COMPANY)
@@ -15,11 +14,9 @@ import { ApplicationService } from 'src/Application/application.service';
 export class CompanyInternshipController {
   constructor(
     private internshipService: InternshipService,
-    private applicationService: ApplicationService,
     @InjectModel(Company.name) private companyModel: Model<CompanyDocument>,
   ) {}
 
-  // Get all internships for this company
   @Get('my-internships')
   async getMyInternships(@Req() req) {
     const company = await this.companyModel.findOne({ 
@@ -33,7 +30,6 @@ export class CompanyInternshipController {
     return this.internshipService.findByCompany(company._id.toString());
   }
 
-  // Get applications for a specific internship
   @Get('internship/:id/applications')
   async getInternshipApplications(
     @Req() req,
@@ -42,7 +38,12 @@ export class CompanyInternshipController {
     @Query('filterBy') filterBy?: string,
     @Query('filterValue') filterValue?: string
   ) {
-    // Verify the internship belongs to this company
+    // Validate ObjectId format first
+    if (!Types.ObjectId.isValid(internshipId)) {
+      throw new NotFoundException('Invalid internship ID format');
+    }
+
+    // Get company
     const company = await this.companyModel.findOne({ 
       user: new Types.ObjectId(req.user.userId) 
     });
@@ -51,15 +52,19 @@ export class CompanyInternshipController {
       throw new NotFoundException('Company profile not found');
     }
 
+    // Get internship with applications
     const result = await this.internshipService.getInternshipWithApplications(internshipId);
     
     if (!result) {
       throw new NotFoundException('Internship not found');
     }
 
-    // Verify ownership
-    if (result.internship.company.toString() !== company._id.toString()) {
-      throw new NotFoundException('Internship not found');
+    // Verify ownership - convert both to strings for comparison
+    const internshipCompanyId = result.internship.company.toString();
+    const userCompanyId = company._id.toString();
+
+    if (internshipCompanyId !== userCompanyId) {
+      throw new NotFoundException('This internship does not belong to your company');
     }
 
     let applications = result.applications;
