@@ -29,7 +29,7 @@ dotenv.config();
   ],
 })
 export class DatabaseModule {
-  static forRoot() {
+  static forRoot(p0: { isGlobal: boolean; envFilePath: string; }) {
     return MongooseModule.forRoot(process.env.MONGODB_URI!);
   }
 }

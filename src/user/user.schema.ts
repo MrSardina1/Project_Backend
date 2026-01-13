@@ -1,30 +1,45 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { Role } from '../Auth/roles.enum';
+
+export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
-export class User extends Document {
-    @Prop({ required: true })
-    username: string;
+export class User {
+  @Prop()
+  name?: string;
 
-    @Prop({ required: true, unique: true })
-    email: string;
+  @Prop()
+  username?: string;
 
-    @Prop({ required: true })
-    password: string;
+  @Prop({ required: true, unique: true })
+  email: string;
 
-    @Prop({
-        type: String,
-        enum: Role,
-        default: Role.STUDENT,
-    })
-    role: Role;
+  @Prop({ required: true })
+  password: string;
 
-    @Prop({ required: false })  // Make optional
-    profilePicture?: string;
+  @Prop()
+  profilePicture?: string;
 
-    @Prop({ required: false })  // Make optional
-    bio?: string;
+  @Prop({ default: false })
+  isEmailVerified: boolean;
+
+  @Prop()
+  emailVerificationToken?: string;
+
+  @Prop()
+  emailVerificationExpires?: Date;
+
+  @Prop()
+  passwordResetToken?: string;
+
+  @Prop()
+  passwordResetExpires?: Date;
+
+  @Prop({ default: 'user' })
+  role: string;
+
+  @Prop({ default: true })
+  isActive: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

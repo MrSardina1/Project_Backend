@@ -14,10 +14,19 @@ import { ReviewModule } from './Review/review.module';
 import { AdminModule } from './Admin/admin.module';
 import { ProfileModule } from './Profile/profile.module';
 import { CompanyInternshipModule } from './CompanyInternship/company-internship.module';
+import { ConfigModule } from '@nestjs/config';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
-    DatabaseModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
+    DatabaseModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+    }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/uploads',
@@ -32,6 +41,7 @@ import { CompanyInternshipModule } from './CompanyInternship/company-internship.
     AdminModule,
     ProfileModule,
     CompanyInternshipModule,
+    EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
