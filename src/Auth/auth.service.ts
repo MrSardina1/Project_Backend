@@ -20,7 +20,7 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
     private emailService: EmailService,
-  ) {}
+  ) { }
 
   async register(registerDto: RegisterDto): Promise<{ message: string }> {
     try {
@@ -149,7 +149,14 @@ export class AuthService {
     await user.save();
 
     // Auto-login after verification
-    const payload = { sub: user._id, email: user.email, role: user.role };
+    const payload = {
+      sub: user._id,
+      email: user.email,
+      role: user.role,
+      username: user.username,
+      profilePicture: user.profilePicture,
+      bio: user.bio
+    };
     const access_token = this.jwtService.sign(payload);
 
     return {
@@ -158,8 +165,11 @@ export class AuthService {
       user: {
         id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
       },
     };
   }
@@ -203,13 +213,26 @@ export class AuthService {
       );
     }
 
+    if (user.isActive === false) {
+      throw new UnauthorizedException(
+        'Your account has been deactivated. Please contact support.',
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { sub: user._id, email: user.email, role: user.role };
+    const payload = {
+      sub: user._id,
+      email: user.email,
+      role: user.role,
+      username: user.username,
+      profilePicture: user.profilePicture,
+      bio: user.bio
+    };
     const access_token = this.jwtService.sign(payload);
 
     return {
@@ -217,8 +240,11 @@ export class AuthService {
       user: {
         id: user._id,
         name: user.name,
+        username: user.username,
         email: user.email,
         role: user.role,
+        profilePicture: user.profilePicture,
+        bio: user.bio,
       },
     };
   }
@@ -275,13 +301,13 @@ export class AuthService {
     try {
       console.log('Testing email connection...');
       await this.emailService.sendVerificationEmail(email, 'test-token-123');
-      return { 
+      return {
         message: 'Test email sent successfully! Check your inbox.',
         details: 'If you don\'t receive it, check SMTP configuration'
       };
     } catch (error) {
       console.error('Email test failed:', error);
-      return { 
+      return {
         message: 'Email test failed',
         details: error.message
       };

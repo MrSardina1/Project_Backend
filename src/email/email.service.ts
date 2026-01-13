@@ -54,69 +54,127 @@ export class EmailService {
       const mailOptions = {
         from: this.configService.get<string>('EMAIL_FROM'),
         to: email,
-        subject: 'Verify Your Email Address - GEISER Timesheet',
+        subject: 'Verify Your Email Address - InterPortal',
         html: `
         <!DOCTYPE html>
         <html>
         <head>
           <style>
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
             body {
-              font-family: Arial, sans-serif;
+              font-family: 'Outfit', 'Helvetica Neue', Helvetica, Arial, sans-serif;
               line-height: 1.6;
-              color: #333;
+              color: #1e293b;
+              margin: 0;
+              padding: 0;
+              background-color: #f8fafc;
+            }
+            .wrapper {
+              width: 100%;
+              background-color: #f8fafc;
+              padding: 40px 0;
             }
             .container {
               max-width: 600px;
               margin: 0 auto;
-              padding: 20px;
+              background: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             }
             .header {
-              background-color: #4CAF50;
-              color: white;
-              padding: 20px;
+              background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+              padding: 40px 20px;
               text-align: center;
-              border-radius: 5px 5px 0 0;
+              color: white;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 28px;
+              font-weight: 600;
+              letter-spacing: -0.025em;
             }
             .content {
-              background-color: #f9f9f9;
-              padding: 30px;
-              border-radius: 0 0 5px 5px;
+              padding: 40px;
+              text-align: center;
+            }
+            .content h2 {
+              color: #0f172a;
+              font-size: 24px;
+              margin-bottom: 16px;
+              font-weight: 600;
+            }
+            .content p {
+              color: #64748b;
+              font-size: 16px;
+              margin-bottom: 32px;
             }
             .button {
               display: inline-block;
-              padding: 12px 30px;
-              background-color: #4CAF50;
-              color: white;
+              padding: 16px 36px;
+              background: #4f46e5;
+              color: #ffffff !important;
               text-decoration: none;
-              border-radius: 5px;
-              margin: 20px 0;
+              border-radius: 12px;
+              font-weight: 600;
+              font-size: 16px;
+              transition: all 0.3s ease;
+              box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            }
+            .link-box {
+              background: #f1f5f9;
+              padding: 16px;
+              border-radius: 8px;
+              margin-top: 32px;
+              word-break: break-all;
+              font-size: 13px;
+              color: #94a3b8;
             }
             .footer {
-              margin-top: 20px;
+              padding: 30px;
               text-align: center;
+              font-size: 13px;
+              color: #94a3b8;
+              border-top: 1px solid #f1f5f9;
+            }
+            .badge {
+              display: inline-block;
+              padding: 4px 12px;
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 20px;
               font-size: 12px;
-              color: #666;
+              font-weight: 600;
+              margin-bottom: 16px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
             }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <h1>Welcome to GEISER Timesheet!</h1>
-            </div>
-            <div class="content">
-              <h2>Verify Your Email Address</h2>
-              <p>Thank you for registering! Please click the button below to verify your email address and activate your account.</p>
-              <div style="text-align: center;">
-                <a href="${verificationLink}" class="button">Verify Email</a>
+          <div class="wrapper">
+            <div class="container">
+              <div class="header">
+                <div class="badge">Registration</div>
+                <h1>Welcome to InterPortal</h1>
               </div>
-              <p>Or copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #666;">${verificationLink}</p>
-              <p><strong>This link will expire in 24 hours.</strong></p>
-              <p>If you didn't create an account, please ignore this email.</p>
-            </div>
-            <div class="footer">
-              <p>&copy; 2025 UTIC - GEISER Timesheet. All rights reserved.</p>
+              <div class="content">
+                <h2>Verify Your Email</h2>
+                <p>We're excited to have you on board! Please click the button below to verify your email address and complete your registration.</p>
+                <a href="${verificationLink}" class="button">Verify My Account</a>
+                
+                <div class="link-box">
+                  Trouble clicking? Copy and paste this link:<br>
+                  <span style="color: #4f46e5;">${verificationLink}</span>
+                </div>
+                <p style="margin-top: 24px; font-size: 14px; color: #94a3b8;">
+                  This link will expire in 24 hours.<br>
+                  If you didn't create an account, you can safely ignore this email.
+                </p>
+              </div>
+              <div class="footer">
+                &copy; 2026 InterPortal - Professional Internship Gateway.<br>
+                All rights reserved.
+              </div>
             </div>
           </div>
         </body>
@@ -146,69 +204,127 @@ export class EmailService {
       const mailOptions = {
         from: this.configService.get<string>('EMAIL_FROM'),
         to: email,
-        subject: 'Password Reset Request - GEISER Timesheet',
+        subject: 'Password Reset Request - InterPortal',
         html: `
         <!DOCTYPE html>
         <html>
         <head>
           <style>
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
             body {
-              font-family: Arial, sans-serif;
+              font-family: 'Outfit', 'Helvetica Neue', Helvetica, Arial, sans-serif;
               line-height: 1.6;
-              color: #333;
+              color: #1e293b;
+              margin: 0;
+              padding: 0;
+              background-color: #f8fafc;
+            }
+            .wrapper {
+              width: 100%;
+              background-color: #f8fafc;
+              padding: 40px 0;
             }
             .container {
               max-width: 600px;
               margin: 0 auto;
-              padding: 20px;
+              background: #ffffff;
+              border-radius: 16px;
+              overflow: hidden;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             }
             .header {
-              background-color: #FF9800;
-              color: white;
-              padding: 20px;
+              background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+              padding: 40px 20px;
               text-align: center;
-              border-radius: 5px 5px 0 0;
+              color: white;
+            }
+            .header h1 {
+              margin: 0;
+              font-size: 28px;
+              font-weight: 600;
+              letter-spacing: -0.025em;
             }
             .content {
-              background-color: #f9f9f9;
-              padding: 30px;
-              border-radius: 0 0 5px 5px;
+              padding: 40px;
+              text-align: center;
+            }
+            .content h2 {
+              color: #0f172a;
+              font-size: 24px;
+              margin-bottom: 16px;
+              font-weight: 600;
+            }
+            .content p {
+              color: #64748b;
+              font-size: 16px;
+              margin-bottom: 32px;
             }
             .button {
               display: inline-block;
-              padding: 12px 30px;
-              background-color: #FF9800;
-              color: white;
+              padding: 16px 36px;
+              background: #f59e0b;
+              color: #ffffff !important;
               text-decoration: none;
-              border-radius: 5px;
-              margin: 20px 0;
+              border-radius: 12px;
+              font-weight: 600;
+              font-size: 16px;
+              transition: all 0.3s ease;
+              box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+            }
+            .link-box {
+              background: #f1f5f9;
+              padding: 16px;
+              border-radius: 8px;
+              margin-top: 32px;
+              word-break: break-all;
+              font-size: 13px;
+              color: #94a3b8;
             }
             .footer {
-              margin-top: 20px;
+              padding: 30px;
               text-align: center;
+              font-size: 13px;
+              color: #94a3b8;
+              border-top: 1px solid #f1f5f9;
+            }
+            .badge {
+              display: inline-block;
+              padding: 4px 12px;
+              background: rgba(255, 255, 255, 0.2);
+              border-radius: 20px;
               font-size: 12px;
-              color: #666;
+              font-weight: 600;
+              margin-bottom: 16px;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
             }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <h1>Password Reset</h1>
-            </div>
-            <div class="content">
-              <h2>Reset Your Password</h2>
-              <p>We received a request to reset your password. Click the button below to create a new password.</p>
-              <div style="text-align: center;">
-                <a href="${resetLink}" class="button">Reset Password</a>
+          <div class="wrapper">
+            <div class="container">
+              <div class="header">
+                <div class="badge">Security</div>
+                <h1>Security Alert</h1>
               </div>
-              <p>Or copy and paste this link into your browser:</p>
-              <p style="word-break: break-all; color: #666;">${resetLink}</p>
-              <p><strong>This link will expire in 1 hour.</strong></p>
-              <p>If you didn't request a password reset, please ignore this email or contact support if you have concerns.</p>
-            </div>
-            <div class="footer">
-              <p>&copy; 2025 UTIC - GEISER Timesheet. All rights reserved.</p>
+              <div class="content">
+                <h2>Reset Your Password</h2>
+                <p>We received a request to reset your password. If you initiated this request, please click the button below to set a new password.</p>
+                <a href="${resetLink}" class="button">Reset Password</a>
+                
+                <div class="link-box">
+                  Trouble clicking? Copy and paste this link:<br>
+                  <span style="color: #f59e0b;">${resetLink}</span>
+                </div>
+                <p style="margin-top: 24px; font-size: 14px; color: #94a3b8;">
+                  This link will expire in 1 hour.<br>
+                  If you didn't request a password reset, you can safely ignore this email.
+                </p>
+              </div>
+              <div class="footer">
+                &copy; 2026 InterPortal - Professional Internship Gateway.<br>
+                All rights reserved.
+              </div>
             </div>
           </div>
         </body>

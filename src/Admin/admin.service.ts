@@ -15,7 +15,7 @@ export class AdminService {
     @InjectModel(Internship.name) private internshipModel: Model<InternshipDocument>,
     @InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>,
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
-  ) {}
+  ) { }
 
   async getDashboardStats() {
     const totalStudents = await this.userModel.countDocuments({ role: 'STUDENT' });
@@ -23,11 +23,11 @@ export class AdminService {
     const pendingCompanies = await this.companyModel.countDocuments({ status: CompanyStatus.PENDING });
     const totalInternships = await this.internshipModel.countDocuments();
     const totalApplications = await this.applicationModel.countDocuments();
-    
+
     // Calculate average rating across all reviews
     const reviews = await this.reviewModel.find();
-    const avgRating = reviews.length > 0 
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length 
+    const avgRating = reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : 0;
 
     return {
@@ -43,7 +43,7 @@ export class AdminService {
 
   async getAllUsers(sortBy?: string, filterBy?: string, filterValue?: string) {
     let query: any = {};
-    
+
     if (filterBy && filterValue) {
       if (filterBy === 'name') {
         query.username = { $regex: filterValue, $options: 'i' };
@@ -71,7 +71,7 @@ export class AdminService {
     if (!Types.ObjectId.isValid(id)) {
       throw new NotFoundException('Invalid user ID');
     }
-    
+
     const user = await this.userModel.findById(id).select('-password');
     if (!user) {
       throw new NotFoundException('User not found');
@@ -102,21 +102,26 @@ export class AdminService {
       throw new NotFoundException('Invalid user ID');
     }
 
-    const user = await this.userModel.findByIdAndDelete(id);
+    const user = await this.userModel.findById(id);
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    return { message: 'User deleted successfully' };
+    // Toggle active state instead of deleting
+    user.isActive = !user.isActive;
+    await user.save();
+
+    const status = user.isActive ? 'activated' : 'deactivated';
+    return { message: `User ${status} successfully` };
   }
 
   async getAllCompanies(sortBy?: string, filterBy?: string, filterValue?: string, status?: string) {
     let query: any = {};
-    
+
     if (status) {
       query.status = status;
     }
-    
+
     if (filterBy && filterValue) {
       if (filterBy === 'name') {
         query.name = { $regex: filterValue, $options: 'i' };
@@ -200,7 +205,7 @@ export class AdminService {
 
   async getAllInternships(sortBy?: string, filterBy?: string, filterValue?: string) {
     let query: any = {};
-    
+
     if (filterBy && filterValue) {
       if (filterBy === 'title') {
         query.title = { $regex: filterValue, $options: 'i' };

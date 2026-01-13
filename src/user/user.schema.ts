@@ -20,6 +20,9 @@ export class User {
   @Prop()
   profilePicture?: string;
 
+  @Prop()
+  bio?: string;
+
   @Prop({ default: false })
   isEmailVerified: boolean;
 
