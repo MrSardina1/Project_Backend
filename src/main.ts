@@ -19,11 +19,12 @@ async function bootstrap() {
 
   app.enableCors({
     origin: 'http://localhost:4200', // Autoriser l'origine de votre frontend
-    methods: 'GET,HEAD,PUT,PUT,PATCH,POST,DELETE',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   })
 
   await app.listen(3000);
+  console.log('Backend is running on http://localhost:3000');
 }
 
 bootstrap();
