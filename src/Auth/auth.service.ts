@@ -133,7 +133,7 @@ export class AuthService {
     }
   }
 
-  async verifyEmail(token: string): Promise<{ message: string }> {
+  async verifyEmail(token: string): Promise<{ message: string; access_token?: string; user?: any }> {
     const user = await this.userModel.findOne({
       emailVerificationToken: token,
       emailVerificationExpires: { $gt: new Date() },
@@ -148,7 +148,20 @@ export class AuthService {
     user.emailVerificationExpires = undefined;
     await user.save();
 
-    return { message: 'Email verified successfully! You can now login.' };
+    // Auto-login after verification
+    const payload = { sub: user._id, email: user.email, role: user.role };
+    const access_token = this.jwtService.sign(payload);
+
+    return {
+      message: 'Email verified successfully! You are now logged in.',
+      access_token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    };
   }
 
   async resendVerification(email: string): Promise<{ message: string }> {
