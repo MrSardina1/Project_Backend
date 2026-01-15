@@ -1,11 +1,11 @@
-import { 
-  Controller, 
-  Get, 
-  Patch, 
-  Body, 
-  Param, 
-  UseGuards, 
-  Req, 
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  Param,
+  UseGuards,
+  Req,
   UseInterceptors,
   UploadedFile,
   BadRequestException
@@ -15,11 +15,12 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { JwtAuthGuard } from 'src/Auth/jwt.auth.guard';
 import { ProfileService } from './profile.service';
+import { Public } from 'src/Auth/public.decorator';
 
 @UseGuards(JwtAuthGuard)
 @Controller('profile')
 export class ProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(private readonly profileService: ProfileService) { }
 
   // Get own profile
   @Get('me')
@@ -28,12 +29,14 @@ export class ProfileController {
   }
 
   // Get any user's profile (public)
+  @Public()
   @Get('user/:id')
   getUserProfile(@Param('id') id: string) {
     return this.profileService.getUserProfile(id);
   }
 
   // Get any company's profile (public)
+  @Public()
   @Get('company/:id')
   getCompanyProfile(@Param('id') id: string) {
     return this.profileService.getCompanyProfile(id);

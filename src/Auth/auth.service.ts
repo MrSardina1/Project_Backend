@@ -13,11 +13,14 @@ import * as crypto from 'crypto';
 import { User, UserDocument } from '../user/user.schema';
 import { EmailService } from '../email/email.service';
 import { RegisterDto } from './dto/register.dto';
+import { Company, CompanyDocument, CompanyStatus } from '../company/company.schema';
+import { Role } from './roles.enum';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel(Company.name) private companyModel: Model<CompanyDocument>,
     private jwtService: JwtService,
     private emailService: EmailService,
   ) { }
@@ -49,7 +52,7 @@ export class AuthService {
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,
         isEmailVerified: false,
-        role: role || 'STUDENT',
+        role: role || Role.STUDENT,
       });
 
       console.log('Saving user:', { username, email, role });
@@ -105,12 +108,24 @@ export class AuthService {
         emailVerificationToken: verificationToken,
         emailVerificationExpires: verificationExpires,
         isEmailVerified: false,
-        role: 'COMPANY',
+        role: Role.COMPANY,
       });
 
       console.log('Saving company user:', { name, username, email });
       await user.save();
       console.log('Company user saved successfully');
+
+      // Create company profile
+      const company = new this.companyModel({
+        name: name,
+        description: description,
+        email: email,
+        website: website,
+        user: user._id,
+        status: CompanyStatus.PENDING,
+      });
+      await company.save();
+      console.log('Company profile created successfully');
 
       // Send verification email - DON'T throw if it fails
       try {
@@ -125,7 +140,7 @@ export class AuthService {
       }
 
       return {
-        message: 'Company registration successful! Please check your email to verify your account.',
+        message: 'Company registration successful! Please check your email to verify your account and wait for admin approval.',
       };
     } catch (error) {
       console.error('Company registration error:', error);
@@ -219,10 +234,36 @@ export class AuthService {
       );
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    // Check company verification status
+    if (user.role === Role.COMPANY) {
+      const company = await this.companyModel.findOne({ user: user._id });
+      if (!company) {
+        throw new UnauthorizedException('Company profile not found. Please contact support.');
+      }
+      if (company.status === CompanyStatus.PENDING) {
+        throw new UnauthorizedException('Your company account is pending admin approval.');
+      }
+      if (company.status === CompanyStatus.REJECTED) {
+        throw new UnauthorizedException('Your company account application was rejected.');
+      }
+    }
 
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+
+    let profileName = user.name;
+    let profilePicture = user.profilePicture;
+    let bio = user.bio;
+
+    if (user.role === Role.COMPANY) {
+      const company = await this.companyModel.findOne({ user: user._id });
+      if (company) {
+        profileName = company.name;
+        profilePicture = company.profilePicture;
+        bio = company.description;
+      }
     }
 
     const payload = {
@@ -230,8 +271,9 @@ export class AuthService {
       email: user.email,
       role: user.role,
       username: user.username,
-      profilePicture: user.profilePicture,
-      bio: user.bio
+      name: profileName,
+      profilePicture: profilePicture,
+      bio: bio
     };
     const access_token = this.jwtService.sign(payload);
 
@@ -239,12 +281,12 @@ export class AuthService {
       access_token,
       user: {
         id: user._id,
-        name: user.name,
+        name: profileName,
         username: user.username,
         email: user.email,
         role: user.role,
-        profilePicture: user.profilePicture,
-        bio: user.bio,
+        profilePicture: profilePicture,
+        bio: bio,
       },
     };
   }

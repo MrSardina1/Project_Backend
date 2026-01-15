@@ -5,13 +5,17 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { User, UserSchema } from '../user/user.schema'; // Changed from './schemas/user.schema'
+import { User, UserSchema } from '../user/user.schema';
+import { Company, CompanySchema } from '../company/company.schema';
 import { JwtStrategy } from './jwt.strategy';
 import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: Company.name, schema: CompanySchema },
+    ]),
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
@@ -27,4 +31,4 @@ import { EmailModule } from '../email/email.module';
   providers: [AuthService, JwtStrategy],
   exports: [AuthService],
 })
-export class AuthModule {}
+export class AuthModule { }

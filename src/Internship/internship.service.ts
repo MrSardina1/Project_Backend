@@ -23,7 +23,7 @@ export class InternshipService {
     private internshipModel: Model<InternshipDocument>,
     @InjectModel(Application.name)
     private applicationModel: Model<ApplicationDocument>,
-  ) {}
+  ) { }
 
   create(data: CreateInternshipDto, companyId: string) {
     return this.internshipModel.create({
@@ -32,7 +32,7 @@ export class InternshipService {
     });
   }
 
-  async findAll(): Promise<InternshipWithCount[]> {
+  async findAll(userId?: string): Promise<InternshipWithCount[]> {
     const internships = await this.internshipModel
       .find()
       .populate('company', 'name website profilePicture')
@@ -43,10 +43,23 @@ export class InternshipService {
         const applicationCount = await this.applicationModel.countDocuments({
           internship: internship._id
         });
+
+        let userApplicationStatus: string | undefined = undefined;
+        if (userId) {
+          const userApplication = await this.applicationModel.findOne({
+            internship: internship._id,
+            student: new Types.ObjectId(userId)
+          });
+          if (userApplication) {
+            userApplicationStatus = userApplication.status;
+          }
+        }
+
         return {
           ...internship,
           _id: internship._id.toString(),
-          applicationCount
+          applicationCount,
+          userApplicationStatus
         } as InternshipWithCount;
       })
     );

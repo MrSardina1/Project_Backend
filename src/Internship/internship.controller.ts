@@ -16,7 +16,7 @@ export class InternshipController {
   constructor(
     private internshipService: InternshipService,
     @InjectModel(Company.name) private companyModel: Model<CompanyDocument>,
-  ) {}
+  ) { }
 
   @Post()
   @Roles(Role.COMPANY)
@@ -27,9 +27,9 @@ export class InternshipController {
     // Get the company ID linked to this user
     const userId = req.user.userId;
     const userObjectId = new Types.ObjectId(userId);
-    
+
     const company = await this.companyModel.findOne({ user: userObjectId });
-    
+
     if (!company) {
       throw new NotFoundException('Company profile not found for this user');
     }
@@ -49,7 +49,8 @@ export class InternshipController {
 
   @Get()
   @Public()
-  findAll() {
-    return this.internshipService.findAll();
+  findAll(@Req() req) {
+    const userId = req.user?.userId;
+    return this.internshipService.findAll(userId);
   }
 }

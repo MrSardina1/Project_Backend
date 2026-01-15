@@ -12,14 +12,14 @@ export class ProfileService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Company.name) private companyModel: Model<CompanyDocument>,
-  ) {}
+  ) { }
 
   async getProfile(userId: string, userRole: string) {
     if (userRole === 'COMPANY') {
       const company = await this.companyModel
         .findOne({ user: new Types.ObjectId(userId) })
         .populate('user', '-password');
-      
+
       if (!company) {
         throw new NotFoundException('Company profile not found');
       }
@@ -53,7 +53,7 @@ export class ProfileService {
     const company = await this.companyModel
       .findById(companyId)
       .populate('user', 'username email profilePicture');
-    
+
     if (!company) {
       throw new NotFoundException('Company not found');
     }
@@ -70,7 +70,7 @@ export class ProfileService {
           { new: true }
         )
         .populate('user', '-password');
-      
+
       if (!company) {
         throw new NotFoundException('Company profile not found');
       }
@@ -99,10 +99,17 @@ export class ProfileService {
           { profilePicture: picturePath },
           { new: true }
         );
-      
+
       if (!company) {
         throw new NotFoundException('Company profile not found');
       }
+
+      // Also update the User model to keep it in sync
+      await this.userModel.findByIdAndUpdate(
+        userId,
+        { profilePicture: picturePath }
+      );
+
       return { profilePicture: picturePath };
     }
 
@@ -120,10 +127,10 @@ export class ProfileService {
 
   async removeProfilePicture(userId: string, userRole: string) {
     if (userRole === 'COMPANY') {
-      const company = await this.companyModel.findOne({ 
-        user: new Types.ObjectId(userId) 
+      const company = await this.companyModel.findOne({
+        user: new Types.ObjectId(userId)
       });
-      
+
       if (!company) {
         throw new NotFoundException('Company profile not found');
       }
@@ -171,16 +178,16 @@ export class ProfileService {
     // Find user based on role
     let user;
     let isCompany = false;
-    
+
     // First try to find as regular user
     user = await this.userModel.findById(userId);
-    
+
     if (!user) {
       // If not found as user, try to find company's user
       const company = await this.companyModel
         .findOne({ user: new Types.ObjectId(userId) })
         .populate('user');
-      
+
       if (company && company.user) {
         user = company.user;
         isCompany = true;

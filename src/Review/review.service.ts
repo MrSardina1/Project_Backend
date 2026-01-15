@@ -17,7 +17,7 @@ export class ReviewService {
     private applicationModel: Model<ApplicationDocument>,
     @InjectModel(Internship.name)
     private internshipModel: Model<InternshipDocument>,
-  ) {}
+  ) { }
 
   async create(userId: string, companyId: string, rating: number, comment?: string) {
     if (!Types.ObjectId.isValid(companyId)) {
@@ -85,7 +85,7 @@ export class ReviewService {
 
     const reviews = await this.reviewModel
       .find({ company: new Types.ObjectId(companyId) })
-      .populate('user', 'username email')
+      .populate('user', 'username email profilePicture')
       .sort({ createdAt: -1 });
 
     const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
@@ -107,7 +107,7 @@ export class ReviewService {
   async findMyReviews(userId: string) {
     return this.reviewModel
       .find({ user: new Types.ObjectId(userId) })
-      .populate('company', 'name email website')
+      .populate('company', 'name email website profilePicture')
       .sort({ createdAt: -1 });
   }
 
@@ -123,7 +123,7 @@ export class ReviewService {
     }
 
     const review = await this.reviewModel.findById(reviewId);
-    
+
     if (!review) {
       throw new NotFoundException('Review not found');
     }
@@ -144,7 +144,7 @@ export class ReviewService {
     }
 
     const review = await this.reviewModel.findById(reviewId);
-    
+
     if (!review) {
       throw new NotFoundException('Review not found');
     }
@@ -154,8 +154,8 @@ export class ReviewService {
     }
 
     await this.reviewModel.findByIdAndDelete(reviewId);
-    
-    return { 
+
+    return {
       message: 'Review deleted successfully',
       deletedReview: {
         id: review._id,
@@ -168,18 +168,18 @@ export class ReviewService {
   async findAll() {
     return this.reviewModel
       .find()
-      .populate('user', 'username email')
+      .populate('user', 'username email profilePicture')
       .populate('company', 'name email website')
       .sort({ createdAt: -1 });
   }
 
   async getAverageRating(companyId: string): Promise<number> {
-    const reviews = await this.reviewModel.find({ 
-      company: new Types.ObjectId(companyId) 
+    const reviews = await this.reviewModel.find({
+      company: new Types.ObjectId(companyId)
     });
-    
+
     if (reviews.length === 0) return 0;
-    
+
     const total = reviews.reduce((sum, review) => sum + review.rating, 0);
     return Math.round((total / reviews.length) * 10) / 10;
   }

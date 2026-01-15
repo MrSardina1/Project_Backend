@@ -64,7 +64,19 @@ export class AdminService {
       usersQuery = usersQuery.sort({ createdAt: -1 });
     }
 
-    return usersQuery.exec();
+    const users = await usersQuery.exec();
+
+    // Map company profile pictures
+    return Promise.all(users.map(async (user) => {
+      const userObj = user.toObject();
+      if (userObj.role === 'COMPANY') {
+        const company = await this.companyModel.findOne({ user: user._id });
+        if (company && company.profilePicture) {
+          userObj.profilePicture = company.profilePicture;
+        }
+      }
+      return userObj;
+    }));
   }
 
   async getUserById(id: string) {

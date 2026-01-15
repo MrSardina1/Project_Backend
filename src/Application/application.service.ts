@@ -15,7 +15,7 @@ export class ApplicationService {
     private internshipModel: Model<InternshipDocument>,
     @InjectModel(Company.name)
     private companyModel: Model<CompanyDocument>,
-  ) {}
+  ) { }
 
   async apply(studentId: string, internshipId: string) {
     if (!Types.ObjectId.isValid(internshipId)) {
@@ -27,14 +27,25 @@ export class ApplicationService {
       throw new NotFoundException('Internship not found');
     }
 
-    // FIX: Check if student already applied
+    // Check if student already applied
     const existingApplication = await this.applicationModel.findOne({
       student: new Types.ObjectId(studentId),
       internship: new Types.ObjectId(internshipId),
     });
 
     if (existingApplication) {
-      throw new BadRequestException('You have already applied for this internship');
+      if (existingApplication.status === ApplicationStatus.PENDING) {
+        throw new BadRequestException('You have already applied for this internship and your application is still pending');
+      }
+      if (existingApplication.status === ApplicationStatus.ACCEPTED) {
+        throw new BadRequestException('You have already been accepted for this internship');
+      }
+      if (existingApplication.status === ApplicationStatus.REJECTED) {
+        // If rejected, delete the old application to allow re-application
+        await this.applicationModel.findByIdAndDelete(existingApplication._id);
+      } else {
+        throw new BadRequestException('You have already applied for this internship');
+      }
     }
 
     return this.applicationModel.create({
@@ -52,7 +63,7 @@ export class ApplicationService {
         path: 'internship',
         populate: {
           path: 'company',
-          select: 'name email website'
+          select: 'name email website profilePicture'
         }
       })
       .sort({ createdAt: -1 });
@@ -67,16 +78,16 @@ export class ApplicationService {
           path: 'internship',
           populate: {
             path: 'company',
-            select: 'name email website'
+            select: 'name email website profilePicture'
           }
         });
     }
 
     if (userRole === Role.COMPANY) {
-      const company = await this.companyModel.findOne({ 
-        user: new Types.ObjectId(userId) 
+      const company = await this.companyModel.findOne({
+        user: new Types.ObjectId(userId)
       });
-      
+
       if (!company) {
         throw new NotFoundException('Company profile not found');
       }
@@ -94,7 +105,7 @@ export class ApplicationService {
           path: 'internship',
           populate: {
             path: 'company',
-            select: 'name email website'
+            select: 'name email website profilePicture'
           }
         })
         .sort({ createdAt: -1 });
@@ -138,16 +149,16 @@ export class ApplicationService {
     }
 
     if (userRole === Role.COMPANY) {
-      const company = await this.companyModel.findOne({ 
-        user: new Types.ObjectId(userId) 
+      const company = await this.companyModel.findOne({
+        user: new Types.ObjectId(userId)
       });
-      
+
       if (!company) {
         throw new NotFoundException('Company profile not found');
       }
 
       const internship = application.internship as any;
-      
+
       if (!internship || !internship.company) {
         throw new NotFoundException('Internship or company information not found');
       }
@@ -168,8 +179,8 @@ export class ApplicationService {
 
   // NEW: Get application count for an internship
   async getApplicationCount(internshipId: string): Promise<number> {
-    return this.applicationModel.countDocuments({ 
-      internship: new Types.ObjectId(internshipId) 
+    return this.applicationModel.countDocuments({
+      internship: new Types.ObjectId(internshipId)
     });
   }
 
@@ -184,7 +195,7 @@ export class ApplicationService {
         path: 'internship',
         populate: {
           path: 'company',
-          select: 'name email website description'
+          select: 'name email website description profilePicture'
         }
       });
 

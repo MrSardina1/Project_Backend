@@ -9,12 +9,20 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  canActivate(context: ExecutionContext) {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const isPublic = this.reflector.getAllAndOverride<boolean>(
       IS_PUBLIC_KEY,
       [context.getHandler(), context.getClass()],
     );
-    if (isPublic) return true; // skip auth
-    return super.canActivate(context);
+
+    try {
+      const result = await super.canActivate(context);
+      if (result) return true;
+    } catch (e) {
+      if (isPublic) return true;
+      throw e;
+    }
+
+    return isPublic;
   }
 }
