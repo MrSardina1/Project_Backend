@@ -26,15 +26,18 @@ export class Company {
   @Prop({ type: Types.ObjectId, ref: 'User' })
   user: Types.ObjectId;
 
-  @Prop({ 
-    type: String, 
-    enum: CompanyStatus, 
-    default: CompanyStatus.PENDING 
+  @Prop({
+    type: String,
+    enum: CompanyStatus,
+    default: CompanyStatus.PENDING
   })
   status: CompanyStatus;
 
   @Prop({ required: false })  // Make optional
   profilePicture?: string;
+
+  @Prop()
+  deletedAt?: Date;
 }
 
 export const CompanySchema = SchemaFactory.createForClass(Company);

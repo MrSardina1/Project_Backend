@@ -3,17 +3,18 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AIChat, AIChatDocument, CVData } from './aichat.schema';
 import { Internship, InternshipDocument } from 'src/Internship/internship.schema';
+import pdf from 'pdf-parse';
 
 @Injectable()
 export class AIChatService {
-  private readonly OPENROUTER_API_KEY = process.env.OPENAI_API_KEY;
+  private readonly OPENROUTER_API_KEY = (process.env.OPENAI_API_KEY || '').trim();
   private readonly OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
   private readonly MODEL = 'meta-llama/llama-3.3-70b-instruct:free';
 
   constructor(
     @InjectModel(AIChat.name) private chatModel: Model<AIChatDocument>,
     @InjectModel(Internship.name) private internshipModel: Model<InternshipDocument>
-  ) {}
+  ) { }
 
   async saveCV(userId: string, cvData: CVData): Promise<{ message: string }> {
     // Save or update CV
@@ -29,19 +30,65 @@ export class AIChatService {
     return { message: 'CV saved successfully' };
   }
 
-  async getCV(userId: string): Promise<CVData | null> {
+  async getCV(userId: string): Promise<any | null> {
     const cvEntry = await this.chatModel
-      .findOne({ user: userId, isCVAnalysis: true })
+      .findOne({
+        user: userId,
+        isCVAnalysis: true,
+        $or: [
+          { cvData: { $ne: null } },
+          { prompt: 'CV_UPLOAD' }
+        ]
+      })
       .sort({ createdAt: -1 });
 
-    return cvEntry?.cvData || null;
+    return cvEntry || null;
   }
 
-  async analyzeCV(userId: string): Promise<string> {
-    const cv = await this.getCV(userId);
-    
-    if (!cv) {
-      return 'No CV found. Please upload your CV first to get personalized internship recommendations.';
+  async deleteCV(userId: string): Promise<{ message: string }> {
+    await this.chatModel.deleteMany({
+      user: userId,
+      isCVAnalysis: true
+    });
+    return { message: 'CV data deleted successfully' };
+  }
+
+  async analyzeCV(userId: string, rawText?: string): Promise<string> {
+    let cvInfo = '';
+
+    if (rawText) {
+      cvInfo = `Raw CV Text Content:\n${rawText}`;
+      // Save the raw text upload as a system event
+      await this.chatModel.create({
+        user: userId,
+        prompt: 'CV_UPLOAD',
+        response: 'CV text extracted successfully',
+        rawText: rawText,
+        provider: 'system',
+        isCVAnalysis: true,
+      });
+    } else {
+      const cvEntry = await this.getCV(userId);
+      if (!cvEntry) {
+        return 'No CV found. Please upload your CV first to get personalized internship recommendations.';
+      }
+
+      if (cvEntry.cvData) {
+        const cv = cvEntry.cvData;
+        cvInfo = `
+Profile Summary:
+- Name: ${cv.fullName}
+- Skills: ${cv.skills?.join(', ') || 'Not specified'}
+- Experience: ${cv.experience?.map((e: any) => `${e.title} at ${e.company}`).join(', ') || 'Not specified'}
+- Education: ${cv.education?.map((e: any) => `${e.degree} from ${e.institution}`).join(', ') || 'Not specified'}
+- Career Goals: ${cv.careerGoals || 'Not specified'}
+- Preferred Industries: ${cv.preferredIndustries?.join(', ') || 'Not specified'}
+`;
+      } else if (cvEntry.prompt === 'CV_UPLOAD' && cvEntry.rawText) {
+        cvInfo = `Raw CV Text Content:\n${cvEntry.rawText}`;
+      } else {
+        return 'Your CV data is incomplete. Please try re-uploading your PDF.';
+      }
     }
 
     // Get all available internships
@@ -50,25 +97,14 @@ export class AIChatService {
       .populate('company', 'name website')
       .lean();
 
-    // Create AI analysis prompt
-    const cvSummary = `
-Profile Summary:
-- Name: ${cv.fullName}
-- Skills: ${cv.skills.join(', ')}
-- Experience: ${cv.experience.map(e => `${e.title} at ${e.company}`).join(', ')}
-- Education: ${cv.education.map(e => `${e.degree} from ${e.institution}`).join(', ')}
-- Career Goals: ${cv.careerGoals || 'Not specified'}
-- Preferred Industries: ${cv.preferredIndustries?.join(', ') || 'Not specified'}
-`;
-
-    const internshipsInfo = internships.map((int: any) => 
+    const internshipsInfo = internships.map((int: any) =>
       `- ${int.title} at ${int.company?.name || 'Unknown'} (${int.location}) - ${int.description?.substring(0, 100) || 'No description'}`
     ).join('\n');
 
     const prompt = `
-You are a career advisor AI. Analyze this candidate's profile and recommend the best matching internships.
+You are a career advisor AI. Analyze this candidate's profile and recommend the best matching internships from our portal.
 
-${cvSummary}
+${cvInfo}
 
 Available Internships:
 ${internshipsInfo}
@@ -128,18 +164,39 @@ Be specific and actionable.
       return answer;
     } catch (error) {
       console.error('AI Analysis Error:', error);
-      return this.getFallbackAnalysis(cv, internships);
+      throw new Error(`AI Analysis failed: ${error.message}`);
+    }
+  }
+
+  async extractTextFromPDF(buffer: Buffer): Promise<string> {
+    try {
+      // Basic check for PDF header
+      const header = buffer.toString('utf8', 0, 5);
+      if (!header.startsWith('%PDF-')) {
+        console.error('Invalid PDF Header:', header);
+        throw new Error('The file uploaded is not a valid PDF. Please make sure you are uploading a real .pdf file.');
+      }
+
+      console.log('PDF Header valid, parsing...');
+      const data = await pdf(buffer);
+      if (!data || !data.text) {
+        throw new Error('Could not extract any text from the PDF. It might be an image-only PDF or protected.');
+      }
+      return data.text;
+    } catch (error) {
+      console.error('PDF Extraction Error:', error);
+      throw new Error(error.message || 'Failed to extract text from PDF');
     }
   }
 
   async ask(userId: string, prompt: string): Promise<string> {
     // Check if asking about CV or internship recommendations
     const lowerPrompt = prompt.toLowerCase();
-    const isAboutCV = lowerPrompt.includes('cv') || 
-                      lowerPrompt.includes('resume') || 
-                      lowerPrompt.includes('recommend') ||
-                      lowerPrompt.includes('match') ||
-                      lowerPrompt.includes('internship for me');
+    const isAboutCV = lowerPrompt.includes('cv') ||
+      lowerPrompt.includes('resume') ||
+      lowerPrompt.includes('recommend') ||
+      lowerPrompt.includes('match') ||
+      lowerPrompt.includes('internship for me');
 
     if (isAboutCV) {
       const cv = await this.getCV(userId);
@@ -192,7 +249,7 @@ Be specific and actionable.
     } catch (error) {
       console.error('AI Error:', error);
       const fallback = this.getFallbackResponse(prompt);
-      
+
       await this.chatModel.create({
         user: userId,
         prompt,
@@ -200,7 +257,7 @@ Be specific and actionable.
         provider: 'fallback',
         error: error.message,
       });
-      
+
       return fallback;
     }
   }
@@ -242,23 +299,23 @@ ${matches.length === 0 ? '\nNote: No exact matches found, but keep checking for 
 
   private getFallbackResponse(prompt: string): string {
     const lowerPrompt = prompt.toLowerCase();
-    
+
     if (lowerPrompt.includes('internship') || lowerPrompt.includes('apply')) {
       return "Browse available internships in the Internships section. Click 'Apply' on positions that interest you. Make sure to complete your profile and upload your CV for personalized recommendations!";
     }
-    
+
     if (lowerPrompt.includes('resume') || lowerPrompt.includes('cv')) {
       return "For a strong CV: 1) Clear formatting, 2) Relevant skills and experience, 3) Quantifiable achievements, 4) Tailored to each position, 5) Proofread carefully. You can upload your CV in the AI Assistant section for personalized internship matching!";
     }
-    
+
     if (lowerPrompt.includes('interview')) {
       return "Interview tips: 1) Research the company, 2) Practice common questions, 3) Prepare your own questions, 4) Dress professionally, 5) Show enthusiasm. Follow up with a thank-you email!";
     }
-    
+
     if (lowerPrompt.includes('hello') || lowerPrompt.includes('hi')) {
       return "Hello! I'm your AI career assistant. I can help with internship advice, CV analysis, and career guidance. Upload your CV for personalized internship recommendations!";
     }
-    
+
     return "I'm here to help with internship and career advice! Try asking about CV tips, interview preparation, or upload your CV for personalized internship recommendations.";
   }
 }

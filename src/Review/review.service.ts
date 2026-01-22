@@ -97,6 +97,7 @@ export class ReviewService {
         name: company.name,
         email: company.email,
         website: company.website,
+        profilePicture: company.profilePicture,
       },
       averageRating: Math.round(averageRating * 10) / 10,
       totalReviews: reviews.length,

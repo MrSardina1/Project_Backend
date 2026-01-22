@@ -53,6 +53,9 @@ export class AIChat {
   @Prop({ type: Object })
   cvData?: CVData;
 
+  @Prop()
+  rawText?: string;
+
   @Prop({ default: false })
   isCVAnalysis: boolean;
 }

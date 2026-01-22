@@ -9,7 +9,7 @@ import { AdminService } from './admin.service';
 @Roles(Role.ADMIN)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService) { }
 
   // Dashboard stats
   @Get('stats')
@@ -22,9 +22,10 @@ export class AdminController {
   getAllUsers(
     @Query('sortBy') sortBy?: string,
     @Query('filterBy') filterBy?: string,
-    @Query('filterValue') filterValue?: string
+    @Query('filterValue') filterValue?: string,
+    @Query('status') status?: string
   ) {
-    return this.adminService.getAllUsers(sortBy, filterBy, filterValue);
+    return this.adminService.getAllUsers(sortBy, filterBy, filterValue, status);
   }
 
   @Get('users/:id')
@@ -37,9 +38,29 @@ export class AdminController {
     return this.adminService.updateUser(id, data);
   }
 
+  @Post('users')
+  createUser(@Body() data: any) {
+    return this.adminService.createUser(data);
+  }
+
+  @Patch('users/:id/role')
+  updateRole(@Param('id') id: string, @Body('role') role: string) {
+    return this.adminService.updateRole(id, role);
+  }
+
   @Delete('users/:id')
   deleteUser(@Param('id') id: string) {
     return this.adminService.deleteUser(id);
+  }
+
+  @Delete('users/:id/soft')
+  softDeleteUser(@Param('id') id: string) {
+    return this.adminService.softDeleteUser(id);
+  }
+
+  @Patch('users/:id/restore')
+  restoreUser(@Param('id') id: string) {
+    return this.adminService.restoreUser(id);
   }
 
   // Company management
@@ -58,6 +79,16 @@ export class AdminController {
     return this.adminService.getPendingCompanies();
   }
 
+  @Get('companies/active')
+  getActiveCompanies() {
+    return this.adminService.getActiveCompanies();
+  }
+
+  @Get('companies/stats')
+  getCompaniesWithStats() {
+    return this.adminService.getCompaniesWithInternshipCounts();
+  }
+
   @Patch('companies/:id/verify')
   verifyCompany(@Param('id') id: string, @Body('status') status: string) {
     return this.adminService.verifyCompany(id, status);
@@ -73,14 +104,20 @@ export class AdminController {
     return this.adminService.deleteCompany(id);
   }
 
+  @Patch('companies/:id/restore')
+  restoreCompany(@Param('id') id: string) {
+    return this.adminService.restoreCompany(id);
+  }
+
   // Internship management
   @Get('internships')
   getAllInternships(
     @Query('sortBy') sortBy?: string,
     @Query('filterBy') filterBy?: string,
-    @Query('filterValue') filterValue?: string
+    @Query('filterValue') filterValue?: string,
+    @Query('company') company?: string
   ) {
-    return this.adminService.getAllInternships(sortBy, filterBy, filterValue);
+    return this.adminService.getAllInternships(sortBy, filterBy, filterValue, company);
   }
 
   @Delete('internships/:id')
@@ -96,8 +133,16 @@ export class AdminController {
 
   // Review management
   @Get('reviews')
-  getAllReviews() {
-    return this.adminService.getAllReviews();
+  getAllReviews(
+    @Query('company') company?: string,
+    @Query('reviewer') reviewer?: string
+  ) {
+    return this.adminService.getAllReviews(company, reviewer);
+  }
+
+  @Get('reviews/companies')
+  getCompaniesWithReviewCounts() {
+    return this.adminService.getCompaniesWithReviewCounts();
   }
 
   @Delete('reviews/:id')
